@@ -1,0 +1,46 @@
+# Exclude subprojects from root repo
+WAM/
+ws_client/
+ws_server/
+
+# Project data
+img_guard/data/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+build/
+.npm/
+
+# Logs
+*.log
+logs/
+
+# Env files
+.env
+.env.*
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
