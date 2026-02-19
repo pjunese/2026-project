@@ -11,3 +11,5 @@ open_clip_torch
 hnswlib
 ImageHash
 psycopg[binary]
+fastapi
+uvicorn

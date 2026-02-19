@@ -49,6 +49,7 @@ from app.config import (
     VECTOR_FILE_COL,
     VECTOR_KEY_COL,
     VECTOR_URL_COL,
+    VECTOR_PHASH_COL,
     TMP_DIR,
 )
 from app.embedder import ClipEmbedder
@@ -477,6 +478,7 @@ class PgVectorIndex:
             VECTOR_FILE_COL,
             VECTOR_KEY_COL,
             VECTOR_URL_COL if VECTOR_URL_COL else "NULL",
+            VECTOR_PHASH_COL if VECTOR_PHASH_COL else "NULL",
         ]
         select_sql = ", ".join(select_cols)
 
@@ -499,10 +501,11 @@ class PgVectorIndex:
             file_name = row[1]
             db_key = row[2]
             asset_url = row[3]
-            cosine = float(row[4])
+            db_phash = row[4]
+            cosine = float(row[5])
 
             db_file = file_name or (Path(db_key).name if db_key else str(db_id))
-            result = ANNResult(db_file=db_file, cosine=cosine, db_key=db_key or None)
+            result = ANNResult(db_file=db_file, cosine=cosine, db_key=db_key or None, db_phash=db_phash)
 
             source = asset_url or db_key or file_name
             if source:

@@ -33,6 +33,7 @@ VECTOR_ID_COL = os.getenv("VECTOR_ID_COL", "id")
 VECTOR_FILE_COL = os.getenv("VECTOR_FILE_COL", "file_name")
 VECTOR_KEY_COL = os.getenv("VECTOR_KEY_COL", "s3_key")
 VECTOR_URL_COL = os.getenv("VECTOR_URL_COL", "asset_url")
+VECTOR_PHASH_COL = os.getenv("VECTOR_PHASH_COL", "")
 
 # temp/cache dir for downloaded images
 TMP_DIR = Path(os.getenv("IMG_GUARD_TMP_DIR", str(DATA_DIR / "cache" / "tmp")))

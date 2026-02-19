@@ -31,6 +31,7 @@ ANN(HNSW) 검색으로 얻은 DB 이미지 1개에 대한 정보
 class ANNResult:
     db_file: str            # DB 이미지 파일명
     db_key: str | None = None     # DB key (S3 key 등), 선택
+    db_phash: int | str | None = None  # DB에 저장된 pHash (int or hex str)
     cosine: float           # 코사인 유사도
     phash_dist: int | None = None     # Union[int, None] 동일 즉, 정수이거나(None)
 

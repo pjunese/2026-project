@@ -40,6 +40,7 @@ class PHashComparator:
         query_path: str,
         candidates: list[ANNResult],
         resolve_path_fn,
+        top_n: int | None = None,
    ) -> list[ANNResult]:
         """
         query_path: 쿼리 이미지 경로
@@ -50,7 +51,8 @@ class PHashComparator:
         q_img = load_image_fixed(query_path)
         q_ph = imagehash.phash(q_img)
 
-        for c in candidates[:TOP_PHASH]:
+        limit = top_n if top_n is not None else TOP_PHASH
+        for c in candidates[:limit]:
             lookup_key = c.db_key or c.db_file
             db_path = resolve_path_fn(lookup_key)
             if db_path is None:
