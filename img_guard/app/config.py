@@ -2,6 +2,7 @@
 """
 프로젝트 전체가 공유하는 기준값(경로/모델/검색/정책/인덱스 파라미터)를 모아둔 파일
 """
+import os
 from pathlib import Path
 
 # 프로젝트 루트 = img_guard/
@@ -15,6 +16,26 @@ DB_IMAGES_DIR = DATA_DIR / "db_images" / "dataset60"
 
 EMBEDDINGS_PATH = DATA_DIR / "embeddings.npy"
 HNSW_INDEX_PATH = DATA_DIR / "hnsw.index"
+
+DB_MANIFEST_PATH = DATA_DIR / "db_manifest.json"
+DB_SIGNATURE_MODE = "mtime_size"
+
+# ANN backend
+# - local: 로컬 HNSW 인덱스 사용 (현재 방식)
+# - pgvector: PostgreSQL(pgvector) 검색 사용
+ANN_BACKEND = os.getenv("ANN_BACKEND", "local").lower()
+
+# pgvector config (service mode)
+VECTOR_DSN = os.getenv("VECTOR_DSN", "")
+VECTOR_TABLE = os.getenv("VECTOR_TABLE", "image_embeddings")
+VECTOR_EMBED_COL = os.getenv("VECTOR_EMBED_COL", "embedding")
+VECTOR_ID_COL = os.getenv("VECTOR_ID_COL", "id")
+VECTOR_FILE_COL = os.getenv("VECTOR_FILE_COL", "file_name")
+VECTOR_KEY_COL = os.getenv("VECTOR_KEY_COL", "s3_key")
+VECTOR_URL_COL = os.getenv("VECTOR_URL_COL", "asset_url")
+
+# temp/cache dir for downloaded images
+TMP_DIR = Path(os.getenv("IMG_GUARD_TMP_DIR", str(DATA_DIR / "cache" / "tmp")))
 
 # 모델 설정 (CLIP)
 CLIP_MODEL_NAME = "ViT-B-32"
