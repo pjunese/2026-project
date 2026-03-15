@@ -64,3 +64,23 @@ ef_search: 검색할 때 탐색 폭, 올리면 recall 증가, latency 증가
 HNSW_M = 16
 HNSW_EF_CONSTRUCTION = 200
 HNSW_EF_SEARCH = 50
+
+# Watermark backend
+# - mock: 계약 테스트용 (실제 워터마킹 미적용, I/O 플로우만 검증)
+# - wam: Meta WAM 실제 추론 (다음 단계에서 inference wiring)
+WM_BACKEND = os.getenv("WM_BACKEND", "mock").lower()
+
+# WAM repo/config/weights path
+WAM_REPO_DIR = Path(
+    os.getenv("WAM_REPO_DIR", str(PROJECT_ROOT / "third_party" / "watermark-anything"))
+)
+WAM_PARAMS_PATH = Path(
+    os.getenv("WAM_PARAMS_PATH", str(WAM_REPO_DIR / "checkpoints" / "params.json"))
+)
+WAM_CHECKPOINT_PATH = Path(
+    os.getenv("WAM_CHECKPOINT_PATH", str(PROJECT_ROOT / "models" / "wam" / "wam_mit.pth"))
+)
+
+# Watermark runtime paths
+WM_TMP_DIR = Path(os.getenv("WM_TMP_DIR", str(TMP_DIR / "watermark")))
+WM_OUTPUT_DIR = Path(os.getenv("WM_OUTPUT_DIR", str(DATA_DIR / "wm_outputs")))

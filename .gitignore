@@ -5,6 +5,8 @@ ws_server/
 
 # Project data
 img_guard/data/
+img_guard/third_party/watermark-anything/
+img_guard/models/wam/*.pth
 
 # macOS
 .DS_Store
