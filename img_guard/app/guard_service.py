@@ -6,17 +6,13 @@ Guard service orchestration shared by:
 
 from __future__ import annotations
 
-import hashlib
 import time
-from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
-from urllib.request import urlopen
 
 import imagehash
 
 from app.ann_index import ANNIndex
-from app.config import TOP_K, TMP_DIR
+from app.config import S3_DEFAULT_BUCKET, TOP_K, TMP_DIR, runtime_signature
 from app.contracts_v1 import (
     GuardRequestV1,
     GuardResponseV1,
@@ -29,39 +25,53 @@ from app.embedder import ClipEmbedder
 from app.phash import PHashComparator
 from app.policy import PolicyEngine
 from app.preprocess import load_image_fixed
+from app.source_io import resolve_source_to_local
 from app.types import ANNResult, GuardResult
 
 _ENGINE: dict[str, Any] = {}
 
 
 def _get_engine() -> dict[str, Any]:
-    if "engine" not in _ENGINE:
+    signature = runtime_signature()
+    if "engine" not in _ENGINE or _ENGINE.get("signature") != signature:
         _ENGINE["engine"] = {
             "embedder": ClipEmbedder(),
             "ann": ANNIndex(),
             "phash": PHashComparator(),
             "policy": PolicyEngine(),
         }
+        _ENGINE["signature"] = signature
     return _ENGINE["engine"]
 
 
-def _download_to_tmp(url: str) -> str:
-    TMP_DIR.mkdir(parents=True, exist_ok=True)
-    suffix = Path(urlparse(url).path).suffix or ".bin"
-    name = hashlib.sha1(url.encode("utf-8")).hexdigest() + suffix
-    out_path = TMP_DIR / name
-    if out_path.exists():
-        return str(out_path)
-    with urlopen(url) as r, out_path.open("wb") as f:
-        f.write(r.read())
-    return str(out_path)
+def reset_guard_engine() -> None:
+    """
+    런타임 중 환경설정 변경(모델/백엔드) 후 엔진을 강제로 재생성할 때 사용.
+    """
+    _ENGINE.clear()
+
+
+def _resolve_input_source(item: Any) -> str:
+    # Prefer explicit URL, but allow s3_uri / s3_key for function-call integration.
+    source = getattr(item, "url", None) or getattr(item, "s3_uri", None) or getattr(item, "s3_key", None)
+    if not source:
+        raise ValueError("input requires one of: url, s3_uri, s3_key")
+    return source
 
 
 def _phash_to_int(ph: Any) -> int:
     if isinstance(ph, int):
-        return ph
+        # PostgreSQL BIGINT는 signed 64-bit라서 음수로 저장된 pHash를
+        # unsigned 64-bit 값으로 복원해 해밍거리 계산을 안정화한다.
+        return ph if ph >= 0 else ph + (1 << 64)
     if isinstance(ph, str):
-        return int(ph, 16)
+        s = ph.strip().lower()
+        if s.startswith("0x"):
+            return int(s, 16)
+        if all(c in "0123456789abcdef" for c in s):
+            return int(s, 16)
+        val = int(s)
+        return val if val >= 0 else val + (1 << 64)
     # imagehash.ImageHash
     return int(str(ph), 16)
 
@@ -103,8 +113,7 @@ def run_guard_v1(req: GuardRequestV1 | dict[str, Any]) -> GuardResponseV1:
         raise ValueError("input is empty")
 
     item = parsed.input[0]
-    if not item.url:
-        raise ValueError("input.url is required")
+    source = _resolve_input_source(item)
 
     top_k = (
         parsed.options.search.top_k
@@ -117,7 +126,7 @@ def run_guard_v1(req: GuardRequestV1 | dict[str, Any]) -> GuardResponseV1:
     t0 = time.perf_counter()
 
     t_download_start = time.perf_counter()
-    local_path = _download_to_tmp(item.url)
+    local_path = str(resolve_source_to_local(source, TMP_DIR, default_s3_bucket=S3_DEFAULT_BUCKET))
     t_download = (time.perf_counter() - t_download_start) * 1000
 
     t_embed_start = time.perf_counter()

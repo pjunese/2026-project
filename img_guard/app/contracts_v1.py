@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 DecisionV1 = Literal["allow", "review", "block"]
@@ -18,9 +18,17 @@ NextActionV1 = Literal["none", "start_vote"]
 
 
 class InputItemV1(BaseModel):
-    url: str
+    url: str | None = None
+    s3_uri: str | None = None
+    s3_key: str | None = None
     filename: str | None = None
     mime_type: str | None = None
+
+    @model_validator(mode="after")
+    def validate_source(self) -> "InputItemV1":
+        if not (self.url or self.s3_uri or self.s3_key):
+            raise ValueError("input item requires one of: url, s3_uri, s3_key")
+        return self
 
 
 class SearchOptionsV1(BaseModel):

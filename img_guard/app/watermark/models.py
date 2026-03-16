@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 
 class MediaInput(BaseModel):
     url: Optional[str] = None
+    s3_uri: Optional[str] = None
+    s3_key: Optional[str] = None
     local_path: Optional[str] = None
     filename: Optional[str] = None
     mime_type: Optional[str] = None

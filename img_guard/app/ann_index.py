@@ -7,7 +7,7 @@ ann_index.py
 LocalHNSWIndex:
 - DB 이미지 목록 수집 + "순서 고정(manifest)" 저장
 - DB 변경 감지(signature) → 필요 시 자동 rebuild
-- CLIP 임베딩 생성/저장(embeddings.npy)
+- 임베딩 생성/저장(embeddings.npy)
 - HNSW 인덱스 생성/저장(hnsw.index)
 - 쿼리 벡터로 Top-K 검색
 
@@ -20,12 +20,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
-from urllib.parse import urlparse
-from urllib.request import urlopen
 
 import numpy as np
 import hnswlib
@@ -33,6 +30,8 @@ import hnswlib
 from app.config import (
     ANN_BACKEND,
     DB_IMAGES_DIR,
+    EMBED_DIM,
+    EMBED_MODEL,
     EMBEDDINGS_PATH,
     HNSW_INDEX_PATH,
     TOP_K,
@@ -50,9 +49,11 @@ from app.config import (
     VECTOR_KEY_COL,
     VECTOR_URL_COL,
     VECTOR_PHASH_COL,
+    VECTOR_S3_BUCKET,
     TMP_DIR,
 )
 from app.embedder import ClipEmbedder
+from app.source_io import resolve_source_to_local
 from app.types import ANNResult
 
 IMG_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
@@ -133,6 +134,8 @@ class DBManifest:
     signature_mode: str
     signature: str
     db_ids: List[str]         # relative ids in fixed order
+    embed_model: str
+    embed_dim: int
 
     def to_dict(self) -> dict:
         return {
@@ -140,6 +143,8 @@ class DBManifest:
             "signature_mode": self.signature_mode,
             "signature": self.signature,
             "db_ids": self.db_ids,
+            "embed_model": self.embed_model,
+            "embed_dim": self.embed_dim,
         }
 
     @staticmethod
@@ -149,6 +154,8 @@ class DBManifest:
             signature_mode=d["signature_mode"],
             signature=d["signature"],
             db_ids=list(d["db_ids"]),
+            embed_model=d.get("embed_model", "clip_vit_b32_openai"),
+            embed_dim=int(d.get("embed_dim", 512)),
         )
 
 
@@ -234,6 +241,11 @@ class LocalHNSWIndex:
         # signature_mode가 다르면 다시 빌드 권장
         if manifest.signature_mode != DB_SIGNATURE_MODE:
             return False
+        # 모델/차원이 다르면 다른 인덱스로 간주
+        if manifest.embed_model != EMBED_MODEL:
+            return False
+        if int(manifest.embed_dim) != int(EMBED_DIM):
+            return False
         return True
 
     # -----
@@ -260,7 +272,7 @@ class LocalHNSWIndex:
 
         # 임베딩 생성
         embedder = ClipEmbedder()
-        db_vecs = embedder.embed_paths(db_paths, batch_size=32)  # (N, 512), float32
+        db_vecs = embedder.embed_paths(db_paths, batch_size=32)
         if db_vecs.dtype != np.float32:
             db_vecs = db_vecs.astype(np.float32)
 
@@ -282,6 +294,8 @@ class LocalHNSWIndex:
             signature_mode=DB_SIGNATURE_MODE,
             signature=sig,
             db_ids=db_ids,
+            embed_model=EMBED_MODEL,
+            embed_dim=D,
         )
         save_manifest(manifest, DB_MANIFEST_PATH)
 
@@ -452,23 +466,6 @@ class PgVectorIndex:
         v = vec.astype(np.float32).reshape(-1)
         return "[" + ",".join(f"{x:.6f}" for x in v.tolist()) + "]"
 
-    @staticmethod
-    def _is_url(s: str) -> bool:
-        return s.startswith("http://") or s.startswith("https://")
-
-    def _download_url(self, url: str) -> str:
-        url_path = urlparse(url).path
-        suffix = Path(url_path).suffix
-        name = hashlib.sha1(url.encode("utf-8")).hexdigest() + (suffix or ".bin")
-        out_path = TMP_DIR / name
-        if out_path.exists():
-            return str(out_path)
-
-        with urlopen(url) as r, out_path.open("wb") as f:
-            shutil.copyfileobj(r, f)
-
-        return str(out_path)
-
     def search(self, query_vec: np.ndarray, k: int = TOP_K) -> List[ANNResult]:
         vec_str = self._vec_to_str(query_vec)
 
@@ -531,11 +528,16 @@ class PgVectorIndex:
         source = self._path_map.get(db_file)
         if not source:
             return None
-        if self._is_url(source):
-            return self._download_url(source)
-        if Path(source).exists():
-            return source
-        return None
+        try:
+            return str(
+                resolve_source_to_local(
+                    source=source,
+                    out_dir=TMP_DIR,
+                    default_s3_bucket=VECTOR_S3_BUCKET,
+                )
+            )
+        except Exception:
+            return None
 
 
 # ---------------------------

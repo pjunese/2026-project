@@ -7,9 +7,12 @@ torch
 torchvision
 torchaudio
 open_clip_torch
+transformers
+timm
 
 hnswlib
 ImageHash
 psycopg[binary]
+boto3
 fastapi
 uvicorn
