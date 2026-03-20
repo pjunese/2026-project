@@ -12,7 +12,10 @@ preprocess.py
 from __future__ import annotations
 from PIL import Image, ImageOps
 
-
+"""
+(path: str) path는 문자열일것으로 기대한다.
+-> Image.Image는 "이 함수는 Image.Image 타입을 반환한다" 라는 뜻
+"""
 def load_image_fixed(path: str) -> Image.Image:
     """
     파일 경로 -> PIL.Image 로드 후 표준화

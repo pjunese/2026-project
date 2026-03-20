@@ -3,9 +3,6 @@ pandas
 pillow
 matplotlib
 
-torch
-torchvision
-torchaudio
 open_clip_torch
 transformers
 timm

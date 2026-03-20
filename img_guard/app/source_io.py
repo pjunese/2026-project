@@ -11,6 +11,7 @@ from app.config import (
     AWS_REGION,
     DOWNLOAD_RETRIES,
     HTTP_DOWNLOAD_TIMEOUT_SEC,
+    MAX_INPUT_MB,
     S3_ENDPOINT_URL,
 )
 
@@ -71,9 +72,19 @@ def _cache_path(source: str, out_dir: Path) -> Path:
     return out_dir / filename
 
 
+def _enforce_max_input_size(path: Path) -> None:
+    max_bytes = max(1, int(MAX_INPUT_MB)) * 1024 * 1024
+    size = path.stat().st_size
+    if size > max_bytes:
+        raise ValueError(
+            f"input file too large: {size} bytes (limit={max_bytes} bytes, MAX_INPUT_MB={MAX_INPUT_MB})"
+        )
+
+
 def _download_http(source: str, out_path: Path) -> Path:
     with urlopen(source, timeout=HTTP_DOWNLOAD_TIMEOUT_SEC) as r, out_path.open("wb") as f:
         shutil.copyfileobj(r, f)
+    _enforce_max_input_size(out_path)
     return out_path
 
 
@@ -94,6 +105,7 @@ def _download_s3(source: str, out_path: Path) -> Path:
     )
     with out_path.open("wb") as f:
         client.download_fileobj(bucket, key, f)
+    _enforce_max_input_size(out_path)
     return out_path
 
 
@@ -109,6 +121,7 @@ def resolve_source_to_local(
         path = Path(normalized)
         if not path.exists():
             raise FileNotFoundError(f"source path not found: {normalized}")
+        _enforce_max_input_size(path)
         return path.resolve()
 
     out_path = _cache_path(normalized, out_dir)
