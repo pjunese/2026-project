@@ -19,7 +19,7 @@ class WatermarkEmbedOptions(BaseModel):
     model: str = "wam"
     nbits: int = 32
     scaling_w: float = 2.0
-    proportion_masked: float = 0.35
+    proportion_masked: float = 0.65
     seed: Optional[int] = None
 
 

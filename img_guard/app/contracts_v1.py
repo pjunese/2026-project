@@ -21,13 +21,14 @@ class InputItemV1(BaseModel):
     url: str | None = None
     s3_uri: str | None = None
     s3_key: str | None = None
+    local_path: str | None = None
     filename: str | None = None
     mime_type: str | None = None
 
     @model_validator(mode="after")
     def validate_source(self) -> "InputItemV1":
-        if not (self.url or self.s3_uri or self.s3_key):
-            raise ValueError("input item requires one of: url, s3_uri, s3_key")
+        if not (self.url or self.s3_uri or self.s3_key or self.local_path):
+            raise ValueError("input item requires one of: local_path, url, s3_uri, s3_key")
         return self
 
 
@@ -122,3 +123,93 @@ class GuardResponseV1(BaseModel):
     candidates: list[MatchItemV1]
     watermark: WatermarkResultV1
     timing_ms: TimingV1
+
+
+AssetKindV1 = Literal[
+    "watermark_request_original",
+    "watermark_result",
+    "verify_request",
+    "register_request",
+    "rejected_request",
+]
+
+
+class ArchiveImageRequestV1(BaseModel):
+    job_id: str
+    kind: AssetKindV1
+    input: InputItemV1
+    meta: dict[str, Any] = Field(default_factory=dict)
+    bucket: str | None = None
+    output_filename: str | None = None
+
+
+class ArchiveImageResponseV1(BaseModel):
+    job_id: str
+    kind: AssetKindV1
+    success: bool
+    reason: str | None = None
+    bucket: str | None = None
+    s3_key: str | None = None
+    s3_uri: str | None = None
+    file_name: str | None = None
+
+
+class VectorUpsertRequestV1(BaseModel):
+    job_id: str
+    input: InputItemV1
+    s3_key: str | None = None
+    asset_url: str | None = None
+    file_name: str | None = None
+
+
+class VectorUpsertResponseV1(BaseModel):
+    job_id: str
+    success: bool
+    reason: str | None = None
+    table: str | None = None
+    record_id: int | None = None
+    file_name: str | None = None
+    s3_key: str | None = None
+    phash: int | None = None
+
+
+class RegisterWorkflowOptionsV1(BaseModel):
+    archive_register_request: bool = True
+    archive_rejected_request: bool = True
+    archive_wm_request_original: bool = True
+    archive_wm_result: bool = True
+    upsert_vector_on_allow: bool = True
+    require_token_issued_for_upsert: bool = True
+    token_issued_meta_key: str = "token_issued"
+
+
+class RegisterWorkflowRequestV1(BaseModel):
+    job_id: str
+    input: InputItemV1
+    meta: dict[str, Any] = Field(default_factory=dict)
+    bucket: str | None = None
+    guard_options: GuardOptionsV1 | None = None
+    watermark_options: WatermarkOptionsV1 | None = None
+    options: RegisterWorkflowOptionsV1 = Field(default_factory=RegisterWorkflowOptionsV1)
+
+
+class RegisterWorkflowAssetsV1(BaseModel):
+    register_request_s3_key: str | None = None
+    rejected_request_s3_key: str | None = None
+    wm_request_original_s3_key: str | None = None
+    wm_result_s3_key: str | None = None
+
+
+class RegisterWorkflowResponseV1(BaseModel):
+    job_id: str
+    success: bool
+    decision: DecisionV1 | None = None
+    next_action: NextActionV1 | None = None
+    reason: str | None = None
+    guard: GuardResponseV1 | None = None
+    assets: RegisterWorkflowAssetsV1 = Field(default_factory=RegisterWorkflowAssetsV1)
+    watermark_embed_success: bool | None = None
+    watermark_output_key: str | None = None
+    vector_upsert: VectorUpsertResponseV1 | None = None
+    pending_actions: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)

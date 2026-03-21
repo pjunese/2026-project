@@ -53,9 +53,14 @@ def reset_guard_engine() -> None:
 
 def _resolve_input_source(item: Any) -> str:
     # Prefer explicit URL, but allow s3_uri / s3_key for function-call integration.
-    source = getattr(item, "url", None) or getattr(item, "s3_uri", None) or getattr(item, "s3_key", None)
+    source = (
+        getattr(item, "local_path", None)
+        or getattr(item, "url", None)
+        or getattr(item, "s3_uri", None)
+        or getattr(item, "s3_key", None)
+    )
     if not source:
-        raise ValueError("input requires one of: url, s3_uri, s3_key")
+        raise ValueError("input requires one of: local_path, url, s3_uri, s3_key")
     return source
 
 
