@@ -1,0 +1,44 @@
+# ===========================================
+# .dockerignore for img_guard
+# ===========================================
+
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+
+# Runtime data (mount as volumes in production)
+data/
+
+# WAM third-party repo (not needed at runtime if only using WAM weights)
+# 모델 가중치(models/wam/*.pth)는 별도 볼륨 마운트 권장
+third_party/watermark-anything/
+
+# Logs / temp
+logs/
+*.log
+
+# Shell scripts (not needed in container)
+set_wam_env.sh
+scripts/set_runtime_env_siglip2.sh

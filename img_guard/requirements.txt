@@ -1,0 +1,24 @@
+numpy
+pandas
+pillow
+matplotlib
+
+open_clip_torch
+transformers
+timm
+
+hnswlib
+ImageHash
+psycopg[binary]
+boto3
+fastapi
+uvicorn
+
+# ── Document module ──────────────────────────────────────────────────────────
+FlagEmbedding          # BGE-M3 공식 라이브러리 (우선 사용)
+sentence-transformers  # BGE-M3 fallback
+python-docx            # DOCX 텍스트 추출
+pdfplumber             # PDF 텍스트 추출
+pdf2image              # PDF → PIL Image 변환 (WAM 워터마크용, poppler 필요)
+pymupdf                # PDF → page image 렌더링 (문서 워터마크/OCR)
+requests               # CLOVA OCR API HTTP 호출

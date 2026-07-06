@@ -1,0 +1,63 @@
+# Exclude subprojects from root repo
+WAM/
+ws_client/
+ws_server/
+
+# Project data
+img_guard/data/
+img_guard/third_party/watermark-anything/
+img_guard/models/wam/*.pth
+
+# Local development / generated notes
+.claude/
+slide_solutions.html
+img_guard/DOCUMENT_WORKFLOW_FUNCTION_CALL.md
+*_notes.*
+*_draft.*
+*_local.*
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+build/
+.npm/
+
+# Logs
+*.log
+logs/
+
+# Env files
+.env
+.env.*
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local secrets / meeting samples
+*.p8
+*.pem
+*.key
+*.mobileprovision
+mpv_criteria.docx
